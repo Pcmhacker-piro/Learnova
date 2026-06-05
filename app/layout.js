@@ -50,13 +50,7 @@ if (typeof window === "undefined") {
   try {
     const { validateEnv } = require("@/lib/env");
     validateEnv({
-      throwOnError: false,
-
-      throwOnError: false, // Avoid failing the build during local/CI evaluation
-
-      throwOnError: false,
-      throwOnError: false, // Avoid failing the build during local/CI evaluation
-
+      throwOnError: false, // suppress build failures during local/CI evaluation
       warnOnce: true,
     });
   } catch (error) {
@@ -364,10 +358,6 @@ export default function RootLayout({ children }) {
               }}
             />
 
-            <CommandPaletteWrapper />
-
-            {/* 🚀 ADDED: System Shortcuts Modal integration layer */}
-            <ShortcutsModal />
             <CommandPaletteWrapper />
 
             {/* 🚀 ADDED: System Shortcuts Modal integration layer */}

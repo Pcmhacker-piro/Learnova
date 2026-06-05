@@ -431,16 +431,27 @@ export async function middleware(request) {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
 
+  // Baseline security headers for ALL responses
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(self), microphone=(), geolocation=()"
+  );
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+
+  // Prevent caching for sensitive API responses
+  if (pathname.startsWith("/api/")) {
+    response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+  }
+
   if (isPage) {
     response.headers.set("Content-Security-Policy", buildPageCsp());
+    // Override DENY with SAMEORIGIN for pages if embedding is needed within the same domain
     response.headers.set("X-Frame-Options", "SAMEORIGIN");
-    response.headers.set("X-Content-Type-Options", "nosniff");
-    response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    response.headers.set(
-      "Permissions-Policy",
-      "camera=(self), microphone=(), geolocation=()"
-    );
-    response.headers.set("X-XSS-Protection", "1; mode=block");
   }
 
   return response;

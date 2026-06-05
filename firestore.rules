@@ -6,37 +6,81 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    function isTeacher() {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-    
+
+    function isInstitute() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'institute';
+    }
+
+    function isTeacher() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
     function isStudent() {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+
+    function isParent() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'parent';
     }
 
     // Users Collection
-    // Anyone authenticated can read user profiles, but users can only edit their own profile
-    // Only teachers/admins can create new teacher profiles (handled via Cloud Functions usually, so blocked here)
+    // Users can read and write their own profile. Admins can read all.
     match /users/{userId} {
+      allow read: if request.auth.uid == userId || isAdmin();
+      allow write: if request.auth.uid == userId || isAdmin();
+    }
+
+    // Attendance Records
+    // Teachers and Admins can manage. Students and Parents can read if it's for them.
+    match /attendance_records/{recordId} {
+      allow read: if isTeacher() || isStudent() || isParent() || isAdmin();
+      allow write: if isTeacher() || isAdmin();
+    }
+
+    // Notices
+    // Institutes and Admins manage. Everyone authenticated can read.
+    match /notices/{noticeId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isInstitute() || isAdmin();
+    }
+
+    // Grades
+    // Teachers and Admins manage. Students and Parents read own.
+    match /grades/{gradeId} {
+      allow read: if isTeacher() || isStudent() || isParent() || isAdmin();
+      allow write: if isTeacher() || isAdmin();
+    }
+
+    // Parent Student Links
+    // Parents and Admins manage.
+    match /parent_student_links/{linkId} {
+      allow read: if isParent() || isAdmin();
+      allow write: if isAdmin();
     }
 
     // Courses Collection
     // Students can read courses, but only teachers can create/update/delete them
     match /courses/{courseId} {
       allow read: if isAuthenticated();
-      allow write: if isTeacher();
+      allow write: if isTeacher() || isAdmin();
     }
 
     // Enrollments Collection
     // Students can read their own enrollments. They can only create an enrollment for themselves.
     // Teachers can read all enrollments for their courses.
     match /enrollments/{enrollmentId} {
-      allow read: if isAuthenticated() && (request.auth.uid == resource.data.studentId || isTeacher());
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.studentId || isTeacher() || isAdmin());
       allow create: if isStudent() && request.resource.data.studentId == request.auth.uid;
-      allow update, delete: if isTeacher();
+      allow update, delete: if isTeacher() || isAdmin();
     }
 
     // Default deny
