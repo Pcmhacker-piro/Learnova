@@ -21,7 +21,7 @@ const PUBLIC_API_PATHS = [
 
 // ─── CSP ──────────────────────────────────────────────────────────────────────
 
-function buildPageCsp() {
+function buildPageCsp(nonce) {
   const frameSrc = [
     "'self'",
     "https://accounts.google.com",
@@ -36,8 +36,8 @@ function buildPageCsp() {
   const cspDirectives = [
     "default-src 'self'",
     process.env.NODE_ENV === "development"
-      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://www.googletagmanager.com"
-      : "script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://www.googletagmanager.com",
+      ? `script-src 'self' 'nonce-${nonce}' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://www.googletagmanager.com`
+      : `script-src 'self' 'nonce-${nonce}' https://apis.google.com https://www.gstatic.com https://www.googletagmanager.com`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.public.blob.vercel-storage.com https://github.com https://www.google-analytics.com https://avatars.githubusercontent.com",
@@ -429,6 +429,11 @@ export async function middleware(request) {
     !pathname.startsWith("/api") &&
     !pathname.match(/\.(?:png|jpg|jpeg|gif|svg|ico|css|js|woff2?|json)$/);
 
+  const nonce = crypto.randomUUID();
+  if (isPage) {
+    requestHeaders.set("x-nonce", nonce);
+  }
+
   const response = NextResponse.next({ request: { headers: requestHeaders } });
 
   // Baseline security headers for ALL responses
@@ -449,7 +454,7 @@ export async function middleware(request) {
   }
 
   if (isPage) {
-    response.headers.set("Content-Security-Policy", buildPageCsp());
+    response.headers.set("Content-Security-Policy", buildPageCsp(nonce));
     // Override DENY with SAMEORIGIN for pages if embedding is needed within the same domain
     response.headers.set("X-Frame-Options", "SAMEORIGIN");
   }

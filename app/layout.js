@@ -2,6 +2,7 @@
 import React from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { headers } from "next/headers";
 
 // ─── Third-party libraries ───────────────────────────────────────────────────
 import { Toaster } from "react-hot-toast";
@@ -47,16 +48,18 @@ import ShortcutsModal from "@/components/ShortcutsModal";
 // throwOnError:false keeps local dev working even without all secrets set.
 
 if (typeof window === "undefined") {
-  try {
-    const { validateEnv } = require("@/lib/env");
-    validateEnv({
-      throwOnError: false, // suppress build failures during local/CI evaluation
-      warnOnce: true,
-    });
-  } catch (error) {
-    console.error("Environment validation failed:", error.message);
-    throw error;
-  }
+  const loadEnv = async () => {
+    try {
+      const { validateEnv } = await import("@/lib/env");
+      validateEnv({
+        throwOnError: false, // suppress build failures during local/CI evaluation
+        warnOnce: true,
+      });
+    } catch (error) {
+      console.warn("Environment validation skipped (non-blocking):", error.message);
+    }
+  };
+  loadEnv();
 }
 
 // ─── Font configuration ───────────────────────────────────────────────────────
@@ -272,6 +275,8 @@ export const viewport = {
 
 // ─── Root layout ──────────────────────────────────────────────────────────────
 export default function RootLayout({ children }) {
+  const nonce = headers().get("x-nonce") || undefined;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -287,6 +292,7 @@ export default function RootLayout({ children }) {
         {/* ── JSON-LD structured data for SEO ── */}
         <script
           type="application/ld+json"
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(siteStructuredData),
           }}
