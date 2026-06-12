@@ -1,4 +1,11 @@
+// 1. Enhanced layout.js with proper structured data for sitelinks
+import SyllabusAnalytics from "../components/SyllabusAnalytics";
+import LearningStreakDashboard from "../components/LearningStreakDashboard";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import { FirestoreProvider } from "@/contexts/FirestoreContext";
+
 // ─── Next.js core & React ────────────────────────────────────────────────────
+
 import React from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
@@ -33,6 +40,8 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 // ─── Context providers (all wrapped inside AllProviders) ─────────────────────
 // AllProviders composes: ThemeProvider → AuthProvider → FirestoreProvider → NotificationProvider
 import AllProviders from "./providers/AllProviders";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 
 // ─── SEO metadata & structured data ─────────────────────────────────────────
 import { siteStructuredData } from "@/lib/seo/siteStructuredData";
@@ -51,12 +60,6 @@ if (typeof window === "undefined") {
     const { validateEnv } = require("@/lib/env");
     validateEnv({
       throwOnError: false,
-
-      throwOnError: false, // Avoid failing the build during local/CI evaluation
-
-      throwOnError: false,
-      throwOnError: false, // Avoid failing the build during local/CI evaluation
-
       warnOnce: true,
     });
   } catch (error) {
@@ -277,7 +280,8 @@ export const viewport = {
 };
 
 // ─── Root layout ──────────────────────────────────────────────────────────────
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const messages = await getMessages();
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -312,9 +316,7 @@ export default function RootLayout({ children }) {
         </a>
 
         {/* ── All context providers (Theme, Auth, Firestore, Notifications) ── */}
-
-        {/* ── All context providers (Theme, Auth, Firestore, Notifications) ── */}
-
+        <NextIntlClientProvider messages={messages}>
         <AllProviders>
           {/* Note: Ensure these providers (ThemeProvider, AuthProvider, etc.) 
               are actually imported and exported correctly in AllProviders 
@@ -365,15 +367,11 @@ export default function RootLayout({ children }) {
             />
 
             <CommandPaletteWrapper />
-
-            {/* 🚀 ADDED: System Shortcuts Modal integration layer */}
-            <ShortcutsModal />
-            <CommandPaletteWrapper />
-
             {/* 🚀 ADDED: System Shortcuts Modal integration layer */}
             <ShortcutsModal />
           </Suspense>
         </AllProviders>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

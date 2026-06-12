@@ -1,12 +1,17 @@
 import { jsonError, jsonSuccess } from "@/lib/api-response";
 import { withErrorHandler, parseJSON } from "@/lib/error-handler";
-import { requireAdmin } from "@/lib/rbac";
+import { requireAdmin, requireAuth } from "@/lib/rbac";
 import { initFirebaseAdmin } from "@/lib/firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { connectDb } from "@/lib/mongodb";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { AppError } from "@/lib/errors";
 import { executeSaga } from "@/lib/transactionCoordinator";
+
+import {
+  parentStudentLinkSchema,
+  deleteParentStudentLinkSchema,
+} from "@/lib/validations";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -81,12 +86,23 @@ export const POST = withErrorHandler(async (request) => {
     throw new AppError("Too many attempts. Please try again later.", 429);
   }
 
-  const body = await parseJSON(request, 1024 * 5);
-  const { parentEmail, studentEmail } = body;
+  const body = await parseJSON(request);
 
-  if (!parentEmail || !studentEmail) {
-    return jsonError("Parent and student emails are required", 400);
+  const validation = parentStudentLinkSchema.safeParse(body);
+  if (!validation.success) {
+    return jsonError(
+      {
+        message: "Validation failed",
+        details: validation.error.issues.map((issue) => ({
+          path: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+      400
+    );
   }
+
+  const { parentEmail, studentEmail } = validation.data;
 
   initFirebaseAdmin();
   const db = getFirestore();
@@ -125,6 +141,17 @@ export const POST = withErrorHandler(async (request) => {
   if (studentProfile.role !== "student") {
     return jsonError(
       `User "${studentEmail}" is registered as "${studentProfile.role}", not "student"`,
+      400
+    );
+  }
+
+  if (
+    parentProfile.instituteId &&
+    studentProfile.instituteId &&
+    parentProfile.instituteId !== studentProfile.instituteId
+  ) {
+    return jsonError(
+      "Parent and student must belong to the same institute",
       400
     );
   }
@@ -194,14 +221,31 @@ export const POST = withErrorHandler(async (request) => {
 });
 
 export const DELETE = withErrorHandler(async (request) => {
-  const { payload } = await requireAdmin(request);
+  const payload = await requireAuth(request);
   const url = new URL(request.url);
-  const parentId = url.searchParams.get("parentId");
-  const studentId = url.searchParams.get("studentId");
 
-  if (!parentId || !studentId) {
-    return jsonError("Missing parentId or studentId parameters", 400);
+  const queryParams = {
+    parentId: url.searchParams.get("parentId"),
+    studentId: url.searchParams.get("studentId"),
+  };
+
+  const validation = deleteParentStudentLinkSchema.safeParse(queryParams);
+  if (!validation.success) {
+    return jsonError(
+      {
+        message: "Validation failed",
+        details: (validation.error.errors || validation.error.issues || []).map(
+          (issue) => ({
+            path: issue.path ? issue.path.join(".") : "",
+            message: issue.message || "Invalid input",
+          })
+        ),
+      },
+      400
+    );
   }
+
+  const { parentId, studentId } = validation.data;
 
   const linkId = `${parentId}_${studentId}`;
   initFirebaseAdmin();

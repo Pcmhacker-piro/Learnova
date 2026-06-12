@@ -35,7 +35,9 @@ function FooterLink({ href, children, external = false }) {
       >
         <span className="relative">
           {children}
-          {external && <ExternalLink size={14} className="ml-1 inline shrink-0" />}
+          {external && (
+            <ExternalLink size={14} className="ml-1 inline shrink-0" />
+          )}
           <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-gradient-to-r from-purple-400 to-blue-400 transition-all duration-300 group-hover:w-full" />
         </span>
         <ArrowUpRight
@@ -107,8 +109,13 @@ export default function Footer() {
     { label: "Register", href: "/register" },
     { label: "Contributors", href: "/contributors" },
     { label: "Terms & Conditions", href: "/terms" },
+    { label: "Privacy Policy", href: "/privacy" },
     { label: "Streaks", href: "/streaks" },
-    { label: "GitHub Codebase", href: "https://github.com/Premshaw23/Learnova", external: true },
+    {
+      label: "GitHub Codebase",
+      href: "https://github.com/Premshaw23/Learnova",
+      external: true,
+    },
     { label: "Discord Server", href: "https://discord.gg/", external: true },
   ];
 
@@ -178,15 +185,26 @@ export default function Footer() {
               {socialLinks.map((s) => (
                 <SocialIcon key={s.label} {...s} />
               ))}
+              <motion.a
+                href="https://discord.gg/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Discord"
+                whileHover={{ scale: 1.15, y: -3 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-200 backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30 hover:border-purple-500/50 hover:text-purple-400"
+              >
+                <FaDiscord size={18} />
+              </motion.a>
             </div>
           </div>
 
           {/* Quick Links */}
-          <div className="space-y-5">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-white/90">
+          <div className="space-y-4">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.28em] text-white/90 sm:text-sm">
               Quick Links
             </h3>
-            <ul className="space-y-3">
+            <ul className="grid grid-cols-2 gap-3 sm:block sm:space-y-3">
               {quickLinks.map((link) => (
                 <FooterLink key={link.href} href={link.href}>
                   {link.label}
@@ -207,11 +225,11 @@ export default function Footer() {
           </div>
 
           {/* Sections */}
-          <div className="space-y-5">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-white/90">
+          <div className="space-y-4">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.28em] text-white/90 sm:text-sm">
               Sections
             </h3>
-            <ul className="space-y-3">
+            <ul className="grid grid-cols-2 gap-3 sm:block sm:space-y-3">
               {sectionLinks.map((link) => (
                 <FooterLink key={link.href} href={link.href}>
                   {link.label}
@@ -220,12 +238,12 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Contact Column with Integrated Modern Campus Card */}
-          <div className="space-y-6">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-white/90">
+          {/* Contact Column */}
+          <div className="space-y-5">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.28em] text-white/90 sm:text-sm">
               Contact
             </h3>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-slate-300 space-y-2">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs text-slate-300 space-y-2 sm:rounded-2xl">
               <p>
                 Email:{" "}
                 <a

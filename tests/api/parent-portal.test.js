@@ -152,6 +152,7 @@ describe("Parent Portal Feature Tests", () => {
           email: "teacher1@learnova.edu",
           role: "teacher",
           fullName: "Teacher One",
+          instituteId: "inst-1",
         },
       },
       parent_student_links: {
@@ -415,7 +416,7 @@ describe("Parent Portal Feature Tests", () => {
       await assertApiError(
         response,
         400,
-        "Parent and student emails are required"
+        "Validation failed"
       );
     });
 
@@ -483,7 +484,7 @@ describe("Parent Portal Feature Tests", () => {
       await assertApiError(
         response,
         400,
-        "Missing parentId or studentId parameters"
+        "Validation failed"
       );
     });
 
@@ -711,7 +712,7 @@ describe("Parent Portal Feature Tests", () => {
         email_verified: true,
         role: "teacher",
       });
-      getUserProfile.mockResolvedValue(store.users["teacher-1"]);
+      getUserProfile.mockImplementation(async (uid) => store.users[uid]);
 
       parseJSON.mockResolvedValue({
         studentId: "student-1",
